@@ -13,11 +13,11 @@
 //     try {
 //       setLoading(true);
 //       const res = await fetch('/api/categories');
-      
+
 //       if (!res.ok) {
 //         throw new Error('Failed to fetch categories');
 //       }
-      
+
 //       const data = await res.json();
 //       setCategories(data);
 //     } catch (error) {
@@ -30,17 +30,17 @@
 
 //   const deleteCategory = async (categoryId) => {
 //     if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) return;
-    
+
 //     try {
 //       const res = await fetch(`/api/categories/${categoryId}`, {
 //         method: 'DELETE'
 //       });
-      
+
 //       if (!res.ok) {
 //         const data = await res.json();
 //         throw new Error(data.error || 'Failed to delete category');
 //       }
-      
+
 //       toast.success('Category deleted successfully');
 //       fetchCategories(); // Refresh the list
 //     } catch (error) {
@@ -58,8 +58,8 @@
 //       <header className="bg-purple-600 text-white p-6 shadow-md">
 //         <div className="container mx-auto flex justify-between items-center">
 //           <h1 className="text-2xl font-bold">Category Management</h1>
-//           <Link 
-//             href="/admin/categories/add" 
+//           <Link
+//             href="/admin/categories/add"
 //             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition"
 //           >
 //             Add New Category
@@ -71,7 +71,7 @@
 //         <div className="bg-white rounded-xl shadow-md overflow-hidden">
 //           <div className="p-6">
 //             <h2 className="text-xl font-semibold text-gray-800 mb-6">All Categories</h2>
-            
+
 //             {loading ? (
 //               <div className="flex justify-center items-center h-64">
 //                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
@@ -101,8 +101,8 @@
 //                             )}
 //                           </td>
 //                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <img 
-//                               src={category.bannerImage} 
+//                             <img
+//                               src={category.bannerImage}
 //                               alt={category.name}
 //                               className="h-10 w-10 rounded-full object-cover"
 //                               onError={(e) => {
@@ -111,7 +111,7 @@
 //                             />
 //                           </td>
 //                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-//                             <Link 
+//                             <Link
 //                               href={`/admin/categories/edit/${category._id}`}
 //                               className="text-blue-600 hover:text-blue-900 mr-4"
 //                             >
@@ -144,23 +144,10 @@
 //   );
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-'use client';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+"use client";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -171,6 +158,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
 
 export default function CategoryDashboard() {
   const [categories, setCategories] = useState([]);
@@ -193,19 +181,42 @@ export default function CategoryDashboard() {
     setFeedbackDialogOpen(true);
   };
 
-  const fetchCategories = async () => {
+  // const fetchCategories = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await fetch('/api/categories');
+
+  //     if (!res.ok) {
+  //       throw new Error('Failed to fetch categories');
+  //     }
+
+  //     const data = await res.json();
+  //     setCategories(data);
+  //   } catch (error) {
+  //     console.error('Error fetching categories:', error);
+  //     showFeedback(
+  //       "Error Loading Categories",
+  //       error.message || "Failed to fetch categories. Please try again.",
+  //       "error"
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+ const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/categories');
-      
+      const res = await fetch("/api/categories");
+
       if (!res.ok) {
-        throw new Error('Failed to fetch categories');
+        throw new Error("Failed to fetch categories");
       }
-      
+
       const data = await res.json();
       setCategories(data);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
       showFeedback(
         "Error Loading Categories",
         error.message || "Failed to fetch categories. Please try again.",
@@ -214,7 +225,7 @@ export default function CategoryDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+}, []);
 
   // Open delete confirmation dialog
   const handleDeleteClick = (category) => {
@@ -225,17 +236,17 @@ export default function CategoryDashboard() {
   // Confirm delete action
   const confirmDelete = async () => {
     if (!categoryToDelete) return;
-    
+
     try {
       const res = await fetch(`/api/categories/${categoryToDelete._id}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
-      
+
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to delete category');
+        throw new Error(data.error || "Failed to delete category");
       }
-      
+
       setDeleteDialogOpen(false);
       showFeedback(
         "Category Deleted",
@@ -245,7 +256,7 @@ export default function CategoryDashboard() {
       fetchCategories(); // Refresh the list
       setCategoryToDelete(null);
     } catch (error) {
-      console.error('Error deleting category:', error);
+      console.error("Error deleting category:", error);
       setDeleteDialogOpen(false);
       showFeedback(
         "Delete Failed",
@@ -321,9 +332,10 @@ export default function CategoryDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+
+useEffect(() => {
+  fetchCategories();
+}, [fetchCategories]);
 
   return (
     <>
@@ -331,12 +343,22 @@ export default function CategoryDashboard() {
         <header className="bg-purple-600 text-white p-6 shadow-md">
           <div className="container mx-auto flex justify-between items-center">
             <h1 className="text-2xl font-bold">Category Management</h1>
-            <Link 
-              href="/admin/categories/add" 
+            <Link
+              href="/admin/categories/add"
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition inline-flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               Add New Category
             </Link>
@@ -346,8 +368,10 @@ export default function CategoryDashboard() {
         <main className="container mx-auto p-6">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">All Categories</h2>
-              
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                All Categories
+              </h2>
+
               {loading ? (
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
@@ -367,15 +391,29 @@ export default function CategoryDashboard() {
                       d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                     />
                   </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No categories</h3>
-                  <p className="mt-1 text-sm text-gray-500">Get started by creating your first category.</p>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    No categories
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Get started by creating your first category.
+                  </p>
                   <div className="mt-6">
                     <Link
                       href="/admin/categories/add"
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
                     >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
                       </svg>
                       Add New Category
                     </Link>
@@ -386,23 +424,42 @@ export default function CategoryDashboard() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Image
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ID
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {categories.map((category) => (
-                        <tr key={category._id} className="hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={category._id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <img 
-                              src={category.bannerImage} 
+                            <Image
+                              src={
+                                category.bannerImage ||
+                                "https://via.placeholder.com/100?text=Category"
+                              }
                               alt={category.name}
+                              width={48}
+                              height={48}
                               className="h-12 w-12 rounded-lg object-cover shadow-sm ring-2 ring-gray-100"
                               onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/100?text=Category';
+                                e.currentTarget.src =
+                                  "https://via.placeholder.com/100?text=Category";
                               }}
                             />
                           </td>
@@ -412,20 +469,32 @@ export default function CategoryDashboard() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {category.name}
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-gray-500 max-w-xs truncate">
-                              {category.description || 'No description'}
+                              {category.description || "No description"}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                            <Link 
+                            <Link
                               href={`/admin/categories/edit/${category._id}`}
                               className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1 transition-colors"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
                               </svg>
                               Edit
                             </Link>
@@ -433,8 +502,18 @@ export default function CategoryDashboard() {
                               onClick={() => handleDeleteClick(category)}
                               className="text-red-600 hover:text-red-900 inline-flex items-center gap-1 transition-colors"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
                               </svg>
                               Delete
                             </button>
@@ -474,15 +553,17 @@ export default function CategoryDashboard() {
                 Delete Category?
               </AlertDialogTitle>
               <AlertDialogDescription className="text-base mt-2">
-                Are you sure you want to delete <span className="font-semibold text-gray-900">{categoryToDelete?.name}</span>? This action cannot be undone and will affect all products in this category.
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-gray-900">
+                  {categoryToDelete?.name}
+                </span>
+                ? This action cannot be undone and will affect all products in
+                this category.
               </AlertDialogDescription>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center gap-2">
-            <AlertDialogCancel 
-              onClick={cancelDelete}
-              className="px-6"
-            >
+            <AlertDialogCancel onClick={cancelDelete} className="px-6">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -496,7 +577,10 @@ export default function CategoryDashboard() {
       </AlertDialog>
 
       {/* Feedback Dialog */}
-      <AlertDialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+      <AlertDialog
+        open={feedbackDialogOpen}
+        onOpenChange={setFeedbackDialogOpen}
+      >
         <AlertDialogContent className="sm:max-w-[425px]">
           <AlertDialogHeader>
             <div className="flex flex-col items-center text-center">
@@ -522,19 +606,6 @@ export default function CategoryDashboard() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // 'use client';
 // import { useState, useEffect } from 'react';

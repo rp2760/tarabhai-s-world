@@ -2150,6 +2150,612 @@
 
 
 
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import { useParams } from "next/navigation";
+// import Image from "next/image";
+// import ProductCard from "../../../app/components/ProductCard";
+// import Navbar from "../../../app/components/Navbar";
+// import { useComparison } from "../../../context/ComparisonContext";
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+// } from "@/components/ui/alert-dialog";
+
+// export default function ProductDetails() {
+//   const [product, setProduct] = useState(null);
+//   const [relatedProducts, setRelatedProducts] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [selectedImage, setSelectedImage] = useState(0);
+//   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+//   const [showZoom, setShowZoom] = useState(false);
+//   const [selectedVariant, setSelectedVariant] = useState(null);
+//   const [selectedSize, setSelectedSize] = useState("");
+//   const { addToComparison, canAddMore, comparisonProducts } = useComparison();
+  
+//   const [alertConfig, setAlertConfig] = useState({
+//     open: false,
+//     title: "",
+//     description: "",
+//     variant: "default"
+//   });
+  
+//   const params = useParams();
+//   const { id } = params;
+  
+//   const isInComparison = comparisonProducts.some(
+//     (p) => p._id === product?._id
+//   );
+
+//   const showAlert = (title, description, variant = "default") => {
+//     setAlertConfig({
+//       open: true,
+//       title,
+//       description,
+//       variant
+//     });
+//   };
+
+//   const closeAlert = () => {
+//     setAlertConfig({ ...alertConfig, open: false });
+//   };
+
+//   useEffect(() => {
+//     async function fetchProduct() {
+//       try {
+//         setLoading(true);
+//         const res = await fetch(`/api/products/${id}`);
+//         if (!res.ok) throw new Error("Product not found");
+        
+//         const data = await res.json();
+//         setProduct(data);
+
+//         // Initialize with first variant if available
+//         if (data.variants && data.variants.length > 0) {
+//           const firstVariant = data.variants[0];
+//           setSelectedVariant(firstVariant);
+//           if (firstVariant.sizeOptions && firstVariant.sizeOptions.length > 0) {
+//             setSelectedSize(firstVariant.sizeOptions[0]);
+//           }
+//         }
+
+//         // Fetch related products
+//         if (data.category) {
+//           const relatedRes = await fetch(
+//             `/api/products?category=${data.category}&limit=4&exclude=${id}`
+//           );
+//           const relatedData = await relatedRes.json();
+//           setRelatedProducts(relatedData);
+//         }
+//       } catch (error) {
+//         setError(error.message);
+//       } finally {
+//         setLoading(false);
+//       }
+//     }
+
+//     if (id) fetchProduct();
+//   }, [id]);
+
+//   // Handle color/variant selection
+//   const handleVariantSelect = (variant) => {
+//     setSelectedVariant(variant);
+//     setSelectedImage(0); // Reset to first image of new variant
+    
+//     // Auto-select first size if available
+//     if (variant.sizeOptions && variant.sizeOptions.length > 0) {
+//       setSelectedSize(variant.sizeOptions[0]);
+//     } else {
+//       setSelectedSize("");
+//     }
+//   };
+
+//   // Handle size selection
+//   const handleSizeSelect = (size) => {
+//     setSelectedSize(size);
+//   };
+
+//   // Get current display product with variant overrides
+//   const getCurrentProduct = () => {
+//     if (!product) return null;
+    
+//     if (selectedVariant) {
+//       return {
+//         ...product,
+//         // Override with variant-specific data
+//         currentPrice: selectedVariant.price || product.currentPrice,
+//         stock: selectedVariant.stock,
+//         color: selectedVariant.color,
+//         size: selectedSize,
+//         images: selectedVariant.images && selectedVariant.images.length > 0 
+//           ? selectedVariant.images 
+//           : product.images,
+//         // Keep original price for discount calculation
+//         originalPrice: product.originalPrice,
+//         // Add variant reference
+//         activeVariant: selectedVariant,
+//         activeSize: selectedSize
+//       };
+//     }
+    
+//     return product;
+//   };
+
+//   const currentProduct = getCurrentProduct();
+
+//   // Calculate discount percentage
+//   const getDiscountPercentage = () => {
+//     if (!currentProduct) return 0;
+//     const { originalPrice, currentPrice } = currentProduct;
+//     if (originalPrice && currentPrice && originalPrice > currentPrice) {
+//       return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+//     }
+//     return 0;
+//   };
+
+//   const handleCompareClick = () => {
+//     if (isInComparison) {
+//       window.location.href = '/comparison';
+//     } else if (canAddMore) {
+//       addToComparison(currentProduct);
+//       showAlert(
+//         "Success! 🎉",
+//         "Product has been added to comparison. You can compare up to 4 products.",
+//         "success"
+//       );
+//     } else {
+//       showAlert(
+//         "Comparison Limit Reached",
+//         "You can compare up to 4 products at once. Please remove a product before adding a new one.",
+//         "warning"
+//       );
+//     }
+//   };
+
+//   const handleAddToCart = async (e) => {
+//     e.preventDefault();
+    
+//     if (!currentProduct || currentProduct.stock <= 0) {
+//       showAlert(
+//         "Out of Stock",
+//         "This product variant is currently out of stock. Please select a different variant.",
+//         "warning"
+//       );
+//       return;
+//     }
+
+//     try {
+//       const cartItem = {
+//         productId: product._id,
+//         quantity: 1,
+//       };
+
+//       // Add variant info if selected
+//       if (selectedVariant) {
+//         cartItem.variant = {
+//           color: selectedVariant.color,
+//           size: selectedSize,
+//           price: selectedVariant.price || product.currentPrice
+//         };
+//       }
+
+//       const res = await fetch("/api/cart", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(cartItem),
+//       });
+
+//       if (res.ok) {
+//         showAlert(
+//           "Added to Cart! 🛒",
+//           `${product.name} (${selectedVariant?.color || ''}${selectedSize ? ' - ' + selectedSize : ''}) has been added to your cart.`,
+//           "success"
+//         );
+//       } else {
+//         throw new Error("Failed to add to cart");
+//       }
+//     } catch (error) {
+//       showAlert(
+//         "Error",
+//         "There was an error adding the product to your cart. Please try again.",
+//         "error"
+//       );
+//     }
+//   };
+
+//   const handleImageHover = (e) => {
+//     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+//     const x = ((e.clientX - left) / width) * 100;
+//     const y = ((e.clientY - top) / height) * 100;
+//     setZoomPosition({ x, y });
+//   };
+
+//   if (loading) {
+//     return (
+//       <>
+//         <Navbar />
+//         <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 flex items-center justify-center">
+//           <div className="w-96 h-96 bg-white/40 backdrop-blur-lg rounded-3xl animate-pulse shadow-2xl"></div>
+//         </div>
+//       </>
+//     );
+//   }
+
+//   if (error || !product) {
+//     return (
+//       <>
+//         <Navbar />
+//         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-red-500 via-orange-500 to-purple-500 text-white">
+//           <div className="bg-white/10 p-10 rounded-3xl shadow-xl text-center backdrop-blur-md">
+//             <h1 className="text-3xl font-extrabold mb-2">❌ Product Not Found</h1>
+//             <p className="text-lg mb-6">
+//               Sorry, the product you're looking for doesn't exist.
+//             </p>
+//             <a
+//               href="/"
+//               className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+//             >
+//               Back to Home
+//             </a>
+//           </div>
+//         </div>
+//       </>
+//     );
+//   }
+
+//   const discountPercentage = getDiscountPercentage();
+
+//   return (
+//     <>
+//       <Navbar />
+//       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 py-10">
+//         <div className="max-w-7xl mx-auto px-6">
+//           {/* Breadcrumb */}
+//           <nav className="mt-16 mb-8 text-sm">
+//             <ol className="flex items-center space-x-3 text-gray-500">
+//               <li>
+//                 <a href="/" className="hover:text-indigo-600">Home</a>
+//               </li>
+//               <li>/</li>
+//               <li>
+//                 <a
+//                   href={`/?category=${product.category}`}
+//                   className="hover:text-indigo-600 capitalize"
+//                 >
+//                   {product.category}
+//                 </a>
+//               </li>
+//               <li>/</li>
+//               <li className="text-gray-800 font-medium">{product.name}</li>
+//             </ol>
+//           </nav>
+
+//           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+//             <div className="md:flex">
+//               {/* LEFT COLUMN - Images */}
+//               <div className="md:w-1/2 p-6 flex">
+//                 <div className="flex flex-col items-center mr-4">
+//                   {currentProduct.images?.map((img, index) => (
+//                     <div
+//                       key={index}
+//                       className={`w-16 h-16 mb-3 rounded-xl shadow-md transition-all overflow-hidden cursor-pointer ${
+//                         selectedImage === index
+//                           ? "ring-4 ring-indigo-500 scale-105"
+//                           : "hover:scale-95"
+//                       }`}
+//                       onClick={() => setSelectedImage(index)}
+//                     >
+//                       <Image
+//                         src={img}
+//                         alt={`${currentProduct.name}-thumb-${index}`}
+//                         width={64}
+//                         height={64}
+//                         className="object-cover w-full h-full"
+//                         unoptimized
+//                       />
+//                     </div>
+//                   ))}
+//                 </div>
+//                 {/* Main Image with Zoom */}
+//                 <div
+//                   className="flex-1 relative rounded-2xl overflow-hidden bg-white border shadow-md"
+//                   onMouseMove={handleImageHover}
+//                   onMouseEnter={() => setShowZoom(true)}
+//                   onMouseLeave={() => setShowZoom(false)}
+//                 >
+//                   <Image
+//                     src={currentProduct.images?.[selectedImage] || currentProduct.image}
+//                     alt={currentProduct.name}
+//                     fill
+//                     className="object-contain transition-transform duration-200 hover:scale-105"
+//                     priority
+//                     unoptimized
+//                   />
+//                   {showZoom && (
+//                     <div
+//                       className="absolute inset-0 bg-white/40 backdrop-blur-lg"
+//                       style={{
+//                         backgroundImage: `url(${currentProduct.images?.[selectedImage]})`,
+//                         backgroundSize: "200%",
+//                         backgroundRepeat: "no-repeat",
+//                         backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+//                       }}
+//                     />
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* RIGHT COLUMN - Info */}
+//               <div className="md:w-1/2 p-8 flex flex-col justify-between">
+//                 {/* Tags */}
+//                 {product.tag && (
+//                   <span className="inline-block bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-sm font-bold px-4 py-1 rounded-full shadow-sm mb-4 w-fit">
+//                     {product.tag}
+//                   </span>
+//                 )}
+
+//                 {/* Title */}
+//                 <h1 className="text-4xl font-extrabold text-gray-900 mb-4 leading-snug">
+//                   {product.name}
+//                 </h1>
+
+//                 {/* Features */}
+//                 {product.features && (
+//                   <div className="mb-4">
+//                     <h3 className="text-lg font-semibold text-gray-800 mb-2">Key Features:</h3>
+//                     <p className="text-gray-600">{product.features}</p>
+//                   </div>
+//                 )}
+
+//                 {/* Ratings */}
+//                 <div className="flex items-center mb-6">
+//                   {[...Array(5)].map((_, i) => (
+//                     <svg
+//                       key={i}
+//                       className={`w-6 h-6 ${
+//                         i < Math.floor(product.averageRating || 4)
+//                           ? "text-yellow-400"
+//                           : "text-gray-300"
+//                       }`}
+//                       fill="currentColor"
+//                       viewBox="0 0 20 20"
+//                     >
+//                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                     </svg>
+//                   ))}
+//                   <span className="ml-2 text-gray-600">
+//                     ({product.totalReviews || 0} reviews)
+//                   </span>
+//                 </div>
+
+//                 {/* Color Variants */}
+//                 {product.variants && product.variants.length > 0 && (
+//                   <div className="mb-6">
+//                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
+//                       Color: <span className="text-indigo-600">{selectedVariant?.color || 'Select'}</span>
+//                     </h3>
+//                     <div className="flex flex-wrap gap-3">
+//                       {product.variants.map((variant) => (
+//                         <button
+//                           key={variant.color}
+//                           onClick={() => handleVariantSelect(variant)}
+//                           className={`px-4 py-2 rounded-lg border-2 transition-all ${
+//                             selectedVariant?.color === variant.color
+//                               ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold"
+//                               : "border-gray-300 hover:border-gray-400 text-gray-700"
+//                           }`}
+//                         >
+//                           {variant.color}
+//                         </button>
+//                       ))}
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Size Options */}
+//                 {selectedVariant?.sizeOptions && selectedVariant.sizeOptions.length > 0 && (
+//                   <div className="mb-6">
+//                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
+//                       Size: <span className="text-indigo-600">{selectedSize || 'Select'}</span>
+//                     </h3>
+//                     <div className="flex flex-wrap gap-3">
+//                       {selectedVariant.sizeOptions.map((size) => (
+//                         <button
+//                           key={size}
+//                           onClick={() => handleSizeSelect(size)}
+//                           className={`px-4 py-2 rounded-lg border-2 transition-all ${
+//                             selectedSize === size
+//                               ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold"
+//                               : "border-gray-300 hover:border-gray-400 text-gray-700"
+//                           }`}
+//                         >
+//                           {size}
+//                         </button>
+//                       ))}
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Stock Status */}
+//                 <div className="mb-4">
+//                   <span className={`text-sm font-semibold ${
+//                     currentProduct.stock > 0 ? 'text-green-600' : 'text-red-600'
+//                   }`}>
+//                     {currentProduct.stock > 0 
+//                       ? `✅ In Stock (${currentProduct.stock} available)` 
+//                       : '❌ Out of Stock'
+//                     }
+//                   </span>
+//                 </div>
+
+//                 {/* Price */}
+//                 <div className="mb-6 p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl shadow-inner">
+//                   <div className="flex items-center gap-3">
+//                     {discountPercentage > 0 && (
+//                       <span className="text-lg line-through text-gray-500">
+//                         ₹{product.originalPrice}
+//                       </span>
+//                     )}
+//                     <span className="text-4xl font-extrabold text-indigo-600">
+//                       ₹{currentProduct.currentPrice}
+//                     </span>
+//                     {discountPercentage > 0 && (
+//                       <span className="ml-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
+//                         Save {discountPercentage}%
+//                       </span>
+//                     )}
+//                   </div>
+//                 </div>
+
+//                 {/* Shipping Info */}
+//                 <div className="mb-6 grid grid-cols-2 gap-4 text-sm text-gray-600">
+//                   <div className="flex items-center">
+//                     <span className="mr-2">🚚</span>
+//                     <span>
+//                       {product.shippingCharge > 0 
+//                         ? `Shipping: ₹${product.shippingCharge}` 
+//                         : 'FREE Shipping'
+//                       }
+//                     </span>
+//                   </div>
+//                   <div className="flex items-center">
+//                     <span className="mr-2">⏱️</span>
+//                     <span>Delivery: {product.deliveryTime}</span>
+//                   </div>
+//                 </div>
+
+//                 {/* Buttons */}
+//                 <div className="space-y-3 mb-8">
+//                   <button
+//                     onClick={handleAddToCart}
+//                     disabled={currentProduct.stock <= 0}
+//                     className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 transition transform text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-lg ${
+//                       currentProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+//                     }`}
+//                   >
+//                     🛒 Add to Cart
+//                   </button>
+
+//                   <button
+//                     onClick={handleCompareClick}
+//                     className="w-full bg-gradient-to-r from-gray-200 to-gray-300 hover:scale-105 transition transform text-gray-800 font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center"
+//                   >
+//                     {isInComparison ? "🔎 View Comparison" : "➕ Add to Comparison"}
+//                   </button>
+
+//                   <button 
+//                     disabled={currentProduct.stock <= 0}
+//                     className={`w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-105 transition transform text-white font-bold py-3 px-6 rounded-xl shadow-lg ${
+//                       currentProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+//                     }`}
+//                   >
+//                     ⚡ Buy Now
+//                   </button>
+//                 </div>
+
+//                 {/* Description */}
+//                 <div className="border-t border-gray-200 pt-6">
+//                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
+//                     Description
+//                   </h3>
+//                   <p className="text-gray-700 leading-relaxed">
+//                     {product.description}
+//                   </p>
+//                 </div>
+
+//                 {/* Additional Info */}
+//                 <div className="grid grid-cols-2 gap-4 mt-4 text-sm text-gray-600">
+//                   {product.brand && (
+//                     <div>
+//                       <span className="font-semibold">Brand:</span> {product.brand}
+//                     </div>
+//                   )}
+//                   {product.weight && (
+//                     <div>
+//                       <span className="font-semibold">Weight:</span> {product.weight}
+//                     </div>
+//                   )}
+//                   {product.dimensions && (
+//                     <div className="col-span-2">
+//                       <span className="font-semibold">Dimensions:</span> {product.dimensions}
+//                     </div>
+//                   )}
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Related Products */}
+//           {relatedProducts.length > 0 && (
+//             <div className="mt-14">
+//               <h2 className="text-3xl font-extrabold text-gray-900 mb-8">
+//                 You may also like ✨
+//               </h2>
+//               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+//                 {relatedProducts.map((relatedProduct) => (
+//                   <ProductCard key={relatedProduct._id} product={relatedProduct} />
+//                 ))}
+//               </div>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+
+//       {/* Alert Dialog */}
+//       <AlertDialog open={alertConfig.open} onOpenChange={closeAlert}>
+//         <AlertDialogContent className="sm:max-w-[425px]">
+//           <AlertDialogHeader>
+//             <div className="flex flex-col items-center text-center">
+//               <AlertDialogTitle>
+//                 {alertConfig.title}
+//               </AlertDialogTitle>
+//               <AlertDialogDescription className="text-base mt-2">
+//                 {alertConfig.description}
+//               </AlertDialogDescription>
+//             </div>
+//           </AlertDialogHeader>
+//           <AlertDialogFooter className="sm:justify-center">
+//             <AlertDialogAction 
+//               className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-8"
+//               onClick={closeAlert}
+//             >
+//               Got it!
+//             </AlertDialogAction>
+//           </AlertDialogFooter>
+//         </AlertDialogContent>
+//       </AlertDialog>
+//     </>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 "use client";
 
@@ -2164,10 +2770,11 @@ import {
   AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
+  AlertDialogFooter,  
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
 export default function ProductDetails() {
   const [product, setProduct] = useState(null);
@@ -2177,38 +2784,29 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [showZoom, setShowZoom] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
+  
+  // Separate state for color and size selection
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  
   const { addToComparison, canAddMore, comparisonProducts } = useComparison();
   
-  // Alert Dialog State
   const [alertConfig, setAlertConfig] = useState({
     open: false,
     title: "",
     description: "",
-    variant: "default" // 'default', 'success', 'error', 'warning'
+    variant: "default"
   });
   
   const params = useParams();
   const { id } = params;
   
-  // Check if current product is in comparison
-  const isInComparison = comparisonProducts.some(
-    (p) => p._id === product?._id
-  );
+  const isInComparison = comparisonProducts.some((p) => p._id === product?._id);
 
-  // Helper function to show alert
   const showAlert = (title, description, variant = "default") => {
-    setAlertConfig({
-      open: true,
-      title,
-      description,
-      variant
-    });
+    setAlertConfig({ open: true, title, description, variant });
   };
 
-  // Helper function to close alert
   const closeAlert = () => {
     setAlertConfig({ ...alertConfig, open: false });
   };
@@ -2221,14 +2819,16 @@ export default function ProductDetails() {
         if (!res.ok) throw new Error("Product not found");
         
         const data = await res.json();
+        console.log("Fetched product:", data); // Debug log
         setProduct(data);
 
-        // Initialize selected variant
+        // Initialize with first variant and first option
         if (data.variants && data.variants.length > 0) {
-          setSelectedVariant(data.variants[0]);
-          setSelectedColor(data.variants[0].color);
-          if (data.variants[0].sizeOptions.length > 0) {
-            setSelectedSize(data.variants[0].sizeOptions[0]);
+          const firstVariant = data.variants[0];
+          setSelectedColor(firstVariant.color);
+          
+          if (firstVariant.options && firstVariant.options.length > 0) {
+            setSelectedSize(firstVariant.options[0].size);
           }
         }
 
@@ -2250,12 +2850,54 @@ export default function ProductDetails() {
     if (id) fetchProduct();
   }, [id]);
 
-  // Handle variant color selection
-  const handleColorSelect = (variant) => {
-    setSelectedVariant(variant);
-    setSelectedColor(variant.color);
-    setSelectedSize(variant.sizeOptions.length > 0 ? variant.sizeOptions[0] : "NA");
-    setSelectedImage(0);
+  // Get current variant based on selected color
+  const getCurrentVariant = () => {
+    if (!product || !selectedColor) return null;
+    return product.variants?.find(v => v.color === selectedColor);
+  };
+
+  // Get current option based on selected size
+  const getCurrentOption = () => {
+    const variant = getCurrentVariant();
+    if (!variant || !selectedSize) return null;
+    return variant.options?.find(opt => opt.size === selectedSize);
+  };
+
+  // Get current product data with all overrides
+  const getCurrentProduct = () => {
+    if (!product) return null;
+    
+    const variant = getCurrentVariant();
+    const option = getCurrentOption();
+    
+    if (variant && option) {
+      return {
+        ...product,
+        currentPrice: option.price,
+        stock: option.stock,
+        color: variant.color,
+        size: option.size,
+        images: variant.images && variant.images.length > 0 ? variant.images : product.images,
+        selectedVariant: variant,
+        selectedOption: option
+      };
+    }
+    
+    return product;
+  };
+
+  const currentProduct = getCurrentProduct();
+
+  // Handle color selection
+  const handleColorSelect = (color) => {
+    setSelectedColor(color);
+    setSelectedImage(0); // Reset image
+    
+    // Auto-select first size option for this color
+    const variant = product.variants?.find(v => v.color === color);
+    if (variant && variant.options && variant.options.length > 0) {
+      setSelectedSize(variant.options[0].size);
+    }
   };
 
   // Handle size selection
@@ -2263,36 +2905,27 @@ export default function ProductDetails() {
     setSelectedSize(size);
   };
 
-  // Get current display product (variant or main product)
-  const getDisplayProduct = () => {
-    if (selectedVariant) {
-      return {
-        ...product,
-        color: selectedVariant.color,
-        stock: selectedVariant.stock,
-        currentPrice: selectedVariant.price || product.currentPrice,
-        images: selectedVariant.images.length > 0 ? selectedVariant.images : product.images,
-        variant: selectedVariant
-      };
-    }
-    return product;
+  // Get available sizes for selected color
+  const getAvailableSizes = () => {
+    const variant = getCurrentVariant();
+    return variant?.options || [];
   };
 
-  const displayProduct = getDisplayProduct();
-
-  // Get available colors from variants
-  const availableColors = product?.variants?.map(variant => variant.color) || [];
-  const uniqueColors = [...new Set(availableColors)];
-
-  // Get available sizes for selected color
-  const availableSizes = selectedVariant?.sizeOptions || [];
+  // Calculate discount
+  const getDiscountPercentage = () => {
+    if (!currentProduct) return 0;
+    const { originalPrice, currentPrice } = currentProduct;
+    if (originalPrice && currentPrice && originalPrice > currentPrice) {
+      return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+    }
+    return 0;
+  };
 
   const handleCompareClick = () => {
     if (isInComparison) {
-      // Navigate to comparison page
       window.location.href = '/comparison';
     } else if (canAddMore) {
-      addToComparison(displayProduct);
+      addToComparison(currentProduct);
       showAlert(
         "Success! 🎉",
         "Product has been added to comparison. You can compare up to 4 products.",
@@ -2303,6 +2936,53 @@ export default function ProductDetails() {
         "Comparison Limit Reached",
         "You can compare up to 4 products at once. Please remove a product before adding a new one.",
         "warning"
+      );
+    }
+  };
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    
+    if (!currentProduct || currentProduct.stock <= 0) {
+      showAlert(
+        "Out of Stock",
+        "This variant is currently out of stock. Please select a different option.",
+        "warning"
+      );
+      return;
+    }
+
+    try {
+      const cartItem = {
+        productId: product._id,
+        quantity: 1,
+        variant: {
+          color: selectedColor,
+          size: selectedSize,
+          price: currentProduct.currentPrice
+        }
+      };
+
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cartItem),
+      });
+
+      if (res.ok) {
+        showAlert(
+          "Added to Cart! 🛒",
+          `${product.name} (${selectedColor} - ${selectedSize}) has been added to your cart.`,
+          "success"
+        );
+      } else {
+        throw new Error("Failed to add to cart");
+      }
+    } catch (error) {
+      showAlert(
+        "Error",
+        "There was an error adding the product to your cart. Please try again.",
+        "error"
       );
     }
   };
@@ -2332,20 +3012,18 @@ export default function ProductDetails() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-red-500 via-orange-500 to-purple-500 text-white">
           <div className="bg-white/10 p-10 rounded-3xl shadow-xl text-center backdrop-blur-md">
             <h1 className="text-3xl font-extrabold mb-2">❌ Product Not Found</h1>
-            <p className="text-lg mb-6">
-              Sorry, the product you're looking for doesn't exist.
-            </p>
-            <a
-              href="/"
-              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
+            <p className="text-lg mb-6">Sorry, the product you&apos;re looking for doesn&apos;t exist.</p>
+            <Link href="/" className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
               Back to Home
-            </a>
+            </Link>
           </div>
         </div>
       </>
     );
   }
+
+  const availableSizes = getAvailableSizes();
+  const discountPercentage = getDiscountPercentage();
 
   return (
     <>
@@ -2355,18 +3033,9 @@ export default function ProductDetails() {
           {/* Breadcrumb */}
           <nav className="mt-16 mb-8 text-sm">
             <ol className="flex items-center space-x-3 text-gray-500">
-              <li>
-                <a href="/" className="hover:text-indigo-600">Home</a>
-              </li>
+              <li><Link href="/" className="hover:text-indigo-600">Home</Link></li>
               <li>/</li>
-              <li>
-                <a
-                  href={`/?category=${product.category}`}
-                  className="hover:text-indigo-600 capitalize"
-                >
-                  {product.category}
-                </a>
-              </li>
+              <li><Link href={`/?category=${product.category}`} className="hover:text-indigo-600 capitalize">{product.category}</Link></li>
               <li>/</li>
               <li className="text-gray-800 font-medium">{product.name}</li>
             </ol>
@@ -2377,140 +3046,106 @@ export default function ProductDetails() {
               {/* LEFT COLUMN - Images */}
               <div className="md:w-1/2 p-6 flex">
                 <div className="flex flex-col items-center mr-4">
-                  {displayProduct.images?.map((img, index) => (
+                  {currentProduct.images?.map((img, index) => (
                     <div
                       key={index}
-                      className={`w-16 h-16 mb-3 rounded-xl shadow-md transition-all overflow-hidden cursor-pointer ${
-                        selectedImage === index
-                          ? "ring-4 ring-indigo-500 scale-105"
-                          : "hover:scale-95"
+                      className={`w-16 h-16 mb-5 rounded-xl shadow-md transition-all overflow-hidden cursor-pointer ${
+                        selectedImage === index ? "ring-4 ring-indigo-500 scale-105" : "hover:scale-95"
                       }`}
                       onClick={() => setSelectedImage(index)}
                     >
-                      <Image
-                        src={img}
-                        alt={`${displayProduct.name}-thumb-${index}`}
-                        width={64}
-                        height={64}
-                        className="object-cover w-full h-full"
-                        unoptimized
-                      />
+                      <Image src={img} alt={`${currentProduct.name}-thumb-${index}`} width={64} height={64} className="object-cover w-full h-full" unoptimized />
                     </div>
                   ))}
                 </div>
-                {/* Main Image with Zoom */}
                 <div
-                  className="flex-1 relative rounded-2xl overflow-hidden bg-white border shadow-md"
+                  className="max-h-[480px] flex-1 relative rounded-2xl overflow-hidden bg-white border shadow-md"
                   onMouseMove={handleImageHover}
                   onMouseEnter={() => setShowZoom(true)}
                   onMouseLeave={() => setShowZoom(false)}
                 >
-                  <Image
-                    src={displayProduct.images?.[selectedImage] || displayProduct.image}
-                    alt={displayProduct.name}
-                    fill
-                    className="object-contain transition-transform duration-200 hover:scale-105"
-                    priority
-                    unoptimized
-                  />
+                  <Image src={currentProduct.images?.[selectedImage] || currentProduct.image} alt={currentProduct.name} fill className="object-contain max-h-screen transition-transform duration-200 hover:scale-105" priority unoptimized />
                   {showZoom && (
-                    <div
-                      className="absolute inset-100 bg-white/40 backdrop-blur-lg"
-                      style={{
-                        backgroundImage: `url(${displayProduct.images?.[selectedImage]})`,
-                        backgroundSize: "200%",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                      }}
-                    />
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-lg" style={{
+                      backgroundImage: `url(${currentProduct.images?.[selectedImage]})`,
+                      backgroundSize: "200%",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                    }} />
                   )}
                 </div>
               </div>
 
               {/* RIGHT COLUMN - Info */}
               <div className="md:w-1/2 p-8 flex flex-col justify-between">
-                {/* Tags */}
-                <span className="inline-block bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-sm font-bold px-4 py-1 rounded-full shadow-sm mb-4">
-                  {product.tag}
-                </span>
+                {product.tag && (
+                  <span className="inline-block bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-sm font-bold px-4 py-1 rounded-full shadow-sm mb-4 w-fit">
+                    {product.tag}
+                  </span>
+                )}
 
-                {/* Title */}
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-4 leading-snug">
                   {product.name}
                 </h1>
 
-                {/* Features */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Key Features:</h3>
-                  <p className="text-gray-600">{product.features}</p>
-                </div>
+                {product.features && (
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Key Features:</h3>
+                    <p className="text-gray-600">{product.features}</p>
+                  </div>
+                )}
 
-                {/* Ratings */}
                 <div className="flex items-center mb-6">
                   {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className={`w-6 h-6 ${
-                        i < Math.floor(product.averageRating || 4)
-                          ? "text-yellow-400"
-                          : "text-gray-300"
-                      }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
+                    <svg key={i} className={`w-6 h-6 ${i < Math.floor(product.averageRating || 4) ? "text-yellow-400" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
-                  <span className="ml-2 text-gray-600">
-                    ({product.totalReviews || 0} reviews)
-                  </span>
+                  <span className="ml-2 text-gray-600">({product.totalReviews || 0} reviews)</span>
                 </div>
 
-                {/* Color Variants */}
-                {uniqueColors.length > 0 && (
+                {/* Color Selection */}
+                {product.variants && product.variants.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                      Color: <span className="text-indigo-600">{selectedColor}</span>
+                      Color: <span className="text-indigo-600">{selectedColor || 'Select'}</span>
                     </h3>
                     <div className="flex flex-wrap gap-3">
-                      {uniqueColors.map((color) => (
+                      {product.variants.map((variant) => (
                         <button
-                          key={color}
-                          onClick={() => {
-                            const variant = product.variants.find(v => v.color === color);
-                            handleColorSelect(variant);
-                          }}
+                          key={variant.color}
+                          onClick={() => handleColorSelect(variant.color)}
                           className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                            selectedColor === color
+                            selectedColor === variant.color
                               ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold"
                               : "border-gray-300 hover:border-gray-400 text-gray-700"
                           }`}
                         >
-                          {color}
+                          {variant.color}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Size Variants */}
+                {/* Size/Storage Selection */}
                 {availableSizes.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                      Size: <span className="text-indigo-600">{selectedSize}</span>
+                      Size: <span className="text-indigo-600">{selectedSize || 'Select'}</span>
                     </h3>
                     <div className="flex flex-wrap gap-3">
-                      {availableSizes.map((size) => (
+                      {availableSizes.map((option) => (
                         <button
-                          key={size}
-                          onClick={() => handleSizeSelect(size)}
+                          key={option.size}
+                          onClick={() => handleSizeSelect(option.size)}
                           className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                            selectedSize === size
+                            selectedSize === option.size
                               ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold"
                               : "border-gray-300 hover:border-gray-400 text-gray-700"
                           }`}
                         >
-                          {size}
+                          {option.size}
                         </button>
                       ))}
                     </div>
@@ -2520,10 +3155,10 @@ export default function ProductDetails() {
                 {/* Stock Status */}
                 <div className="mb-4">
                   <span className={`text-sm font-semibold ${
-                    displayProduct.stock > 0 ? 'text-green-600' : 'text-red-600'
+                    currentProduct.stock > 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {displayProduct.stock > 0 
-                      ? `✅ In Stock (${displayProduct.stock} available)` 
+                    {currentProduct.stock > 0 
+                      ? `✅ In Stock (${currentProduct.stock} available)` 
                       : '❌ Out of Stock'
                     }
                   </span>
@@ -2532,25 +3167,17 @@ export default function ProductDetails() {
                 {/* Price */}
                 <div className="mb-6 p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl shadow-inner">
                   <div className="flex items-center gap-3">
-                    {product.originalPrice > displayProduct.currentPrice && (
+                    {discountPercentage > 0 && (
                       <span className="text-lg line-through text-gray-500">
-                        {product.currency || "₹"}
-                        {product.originalPrice}
+                        ₹{product.originalPrice}
                       </span>
                     )}
                     <span className="text-4xl font-extrabold text-indigo-600">
-                      {product.currency || "₹"}
-                      {displayProduct.currentPrice}
+                      ₹{currentProduct.currentPrice}
                     </span>
-                    {product.originalPrice > displayProduct.currentPrice && (
+                    {discountPercentage > 0 && (
                       <span className="ml-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
-                        Save{" "}
-                        {Math.round(
-                          ((product.originalPrice - displayProduct.currentPrice) /
-                            product.originalPrice) *
-                            100
-                        )}
-                        %
+                        Save {discountPercentage}%
                       </span>
                     )}
                   </div>
@@ -2560,12 +3187,7 @@ export default function ProductDetails() {
                 <div className="mb-6 grid grid-cols-2 gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <span className="mr-2">🚚</span>
-                    <span>
-                      {product.shippingCharge > 0 
-                        ? `Shipping: ₹${product.shippingCharge}` 
-                        : 'FREE Shipping'
-                      }
-                    </span>
+                    <span>{product.shippingCharge > 0 ? `Shipping: ₹${product.shippingCharge}` : 'FREE Shipping'}</span>
                   </div>
                   <div className="flex items-center">
                     <span className="mr-2">⏱️</span>
@@ -2575,100 +3197,30 @@ export default function ProductDetails() {
 
                 {/* Buttons */}
                 <div className="space-y-3 mb-8">
-                  <button
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      if (displayProduct.stock <= 0) {
-                        showAlert(
-                          "Out of Stock",
-                          "This variant is currently out of stock. Please select a different variant or check back later.",
-                          "warning"
-                        );
-                        return;
-                      }
-                      try {
-                        const res = await fetch("/api/cart", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            productId: product._id,
-                            variant: selectedVariant ? {
-                              color: selectedColor,
-                              size: selectedSize,
-                              price: selectedVariant.price
-                            } : null,
-                            quantity: 1,
-                          }),
-                        });
-                        if (res.ok) {
-                          showAlert(
-                            "Added to Cart! 🛒",
-                            "Product has been successfully added to your cart.",
-                            "success"
-                          );
-                        } else {
-                          throw new Error("Failed to add to cart");
-                        }
-                      } catch (error) {
-                        showAlert(
-                          "Error",
-                          "There was an error adding the product to your cart. Please try again.",
-                          "error"
-                        );
-                      }
-                    }}
-                    disabled={displayProduct.stock <= 0}
-                    className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 transition transform text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-lg ${
-                      displayProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
+                  <button onClick={handleAddToCart} disabled={currentProduct.stock <= 0} className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 transition transform text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-lg ${currentProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     🛒 Add to Cart
                   </button>
 
-                  <button
-                    onClick={handleCompareClick}
-                    className="w-full bg-gradient-to-r from-gray-200 to-gray-300 hover:scale-105 transition transform text-gray-800 font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center"
-                  >
+                  <button onClick={handleCompareClick} className="w-full bg-gradient-to-r from-gray-200 to-gray-300 hover:scale-105 transition transform text-gray-800 font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center">
                     {isInComparison ? "🔎 View Comparison" : "➕ Add to Comparison"}
                   </button>
 
-                  <button 
-                    disabled={displayProduct.stock <= 0}
-                    className={`w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-105 transition transform text-white font-bold py-3 px-6 rounded-xl shadow-lg ${
-                      displayProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
+                  <button disabled={currentProduct.stock <= 0} className={`w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-105 transition transform text-white font-bold py-3 px-6 rounded-xl shadow-lg ${currentProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     ⚡ Buy Now
                   </button>
                 </div>
 
                 {/* Description */}
                 <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Description
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed">
-                    {product.description}
-                  </p>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Description</h3>
+                  <p className="text-gray-700 leading-relaxed">{product.description}</p>
                 </div>
 
                 {/* Additional Info */}
                 <div className="grid grid-cols-2 gap-4 mt-4 text-sm text-gray-600">
-                  {product.brand && (
-                    <div>
-                      <span className="font-semibold">Brand:</span> {product.brand}
-                    </div>
-                  )}
-                  {product.weight && (
-                    <div>
-                      <span className="font-semibold">Weight:</span> {product.weight}
-                    </div>
-                  )}
-                  {product.dimensions && (
-                    <div className="col-span-2">
-                      <span className="font-semibold">Dimensions:</span> {product.dimensions}
-                    </div>
-                  )}
+                  {product.brand && <div><span className="font-semibold">Brand:</span> {product.brand}</div>}
+                  {product.weight && <div><span className="font-semibold">Weight:</span> {product.weight}</div>}
+                  {product.dimensions && <div className="col-span-2"><span className="font-semibold">Dimensions:</span> {product.dimensions}</div>}
                 </div>
               </div>
             </div>
@@ -2677,9 +3229,7 @@ export default function ProductDetails() {
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-3xl font-extrabold text-gray-900 mb-8">
-                You may also like ✨
-              </h2>
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-8">You may also like ✨</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                 {relatedProducts.map((relatedProduct) => (
                   <ProductCard key={relatedProduct._id} product={relatedProduct} />
@@ -2690,28 +3240,22 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* Alert Dialog Component */}
+      {/* Alert Dialog */}
       <AlertDialog open={alertConfig.open} onOpenChange={closeAlert}>
         <AlertDialogContent className="sm:max-w-[425px]">
           <AlertDialogHeader>
             <div className="flex flex-col items-center text-center">
-            <AlertDialogTitle>
-              {alertConfig.title}
-              </AlertDialogTitle>
-            <AlertDialogDescription className="text-base mt-2">
-              {alertConfig.description}
-            </AlertDialogDescription>
+              <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+              <AlertDialogDescription className="text-base mt-2">{alertConfig.description}</AlertDialogDescription>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction 
-              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-8"
-            onClick={closeAlert}>
-              Got it !
+            <AlertDialogAction className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-8" onClick={closeAlert}>
+              Got it!
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
-}
+} 

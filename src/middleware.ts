@@ -24,7 +24,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (isAdminRoute(req)) {
     // Get the user's session
     const { userId } = await auth()
-    
+
     // If user is not signed in, redirect to sign-in
     if (!userId) {
       // const signInUrl = new URL('/sign-in', req.url)

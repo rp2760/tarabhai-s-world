@@ -1212,12 +1212,12 @@ export default function Navbar() {
             {/* Logo */}
             <Link
               href="/"
-              className="flex items-center gap-2 text-xl font-bold tracking-tight group"
+              className="flex items-center  text-xl font-bold tracking-tight group"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300">
-                <span className="text-white font-bold text-sm">N</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:rotate-180 transition-transform duration-300">
+                <span className="text-white font-bold text-sm">d</span>
               </div>
-              <span className="text-gray-900">Nitec.</span>
+              <span className="text-gray-900">ealPort</span>
             </Link>
 
             {/* Center Search Bar - Desktop */}

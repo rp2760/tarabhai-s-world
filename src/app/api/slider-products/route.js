@@ -30,6 +30,7 @@ export async function GET() {
   await connectDB();
   try {
     const products = await SliderProduct.find().sort({ createdAt: -1 });
+    // console.log(products);
     return NextResponse.json(products);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch slider products", details: error.message }, { status: 500 });

@@ -16,8 +16,6 @@
 // }
 
 
-
-
 import { connectDB } from "../../../../lib/db";
 import { SliderProduct } from "../../../../models/SliderProduct";
 import { NextResponse } from "next/server";
@@ -26,7 +24,8 @@ import { NextResponse } from "next/server";
 export async function GET(_, { params }) {
   await connectDB();
   try {
-    const product = await SliderProduct.findById(params.id);
+    const { id } = await params; // Await params before accessing properties
+    const product = await SliderProduct.findById(id);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -43,8 +42,14 @@ export async function GET(_, { params }) {
 export async function PUT(req, { params }) {
   await connectDB();
   try {
+    const { id } = await params; // Await params before accessing properties
     const body = await req.json();
-    const updated = await SliderProduct.findByIdAndUpdate(params.id, body, { new: true });
+    const updated = await SliderProduct.findByIdAndUpdate(id, body, { new: true });
+    
+    if (!updated) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
@@ -58,8 +63,14 @@ export async function PUT(req, { params }) {
 export async function DELETE(_, { params }) {
   await connectDB();
   try {
-    const deleted = await SliderProduct.findByIdAndDelete(params.id);
-    return NextResponse.json({ message: "Deleted", deleted });
+    const { id } = await params; // Await params before accessing properties
+    const deleted = await SliderProduct.findByIdAndDelete(id);
+    
+    if (!deleted) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    
+    return NextResponse.json({ message: "Deleted successfully", deleted });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to delete slider product", details: error.message },

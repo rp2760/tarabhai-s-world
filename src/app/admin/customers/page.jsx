@@ -14,6 +14,7 @@ export default function CustomersPage() {
         if (response.ok) {
           const data = await response.json();
           setCustomers(data);
+          console.log(data);
         } else {
           console.error('Failed to fetch customers');
         }

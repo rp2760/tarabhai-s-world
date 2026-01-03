@@ -124,7 +124,7 @@ export default function CategoryNav() {
 
   if (loading) {
     return (
-      <div className="bg-white shadow-sm">
+      <div className="bg-accent shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex space-x-8 overflow-x-auto pb-2">
             {[...Array(8)].map((_, i) => (

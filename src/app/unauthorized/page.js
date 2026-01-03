@@ -47,7 +47,7 @@ export default function Unauthorized() {
 
         {/* Description */}
         <p className="text-gray-600 mb-2 text-lg">
-          Sorry, you don't have permission to access the admin panel.
+          Sorry, you don&apos;t have permission to access the admin panel.
         </p>
         <p className="text-gray-500 mb-8 text-sm">
           Only authorized administrators can view this page. If you believe this is an error, please contact support.

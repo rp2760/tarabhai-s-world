@@ -1,5 +1,8 @@
 // src/app/admin/layout.jsx
 'use client';
+
+import { useUser, UserButton } from "@clerk/nextjs";
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -7,6 +10,10 @@ import { usePathname } from 'next/navigation';
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
+
+   const { user, isLoaded } = useUser();
+
+  if (!isLoaded) return null;
 
   const navigation = [
     {
@@ -107,19 +114,30 @@ export default function AdminLayout({ children }) {
         </nav>
 
         {/* User profile at bottom */}
-        <div className="p-4 border-t border-slate-700">
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-              RD
-            </div>
-            {sidebarOpen && (
-              <div className="ml-3">
-                <p className="text-sm font-medium text-white">Rahul Dev</p>
-                <p className="text-xs text-slate-400">Administrator</p>
-              </div>
-            )}
+         <div className="p-4 border-t border-slate-700">
+      <div className="flex items-center">
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "w-9 h-9"
+            }
+          }}
+        />
+
+        {sidebarOpen && (
+          <div className="ml-3">
+            <p className="text-sm font-medium text-white">
+              {user?.username ||
+                user?.firstName ||
+                user?.fullName ||
+                user?.emailAddresses[0]?.emailAddress}
+            </p>
+
+            <p className="text-xs text-slate-400">Administrator</p>
           </div>
-        </div>
+        )}
+      </div>
+    </div>
       </div>
       
       {/* Main Content */}

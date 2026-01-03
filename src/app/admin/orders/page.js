@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import Link from 'next/link';
 
 export default function OrdersPage() {
@@ -13,32 +13,32 @@ export default function OrdersPage() {
     limit: 20
   });
 
-  useEffect(() => {
-    fetchOrders();
-  }, [filters]);
+useEffect(() => {
+  fetchOrders();
+}, [fetchOrders]);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
+const fetchOrders = useCallback(async () => {
+  setLoading(true);
+  try {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
 
-      const response = await fetch(`/api/admin/orders?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.orders);
-        setPagination(data.pagination);
-      } else {
-        console.error('Failed to fetch orders');
-      }
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setLoading(false);
+    const response = await fetch(`/api/admin/orders?${params}`);
+    if (response.ok) {
+      const data = await response.json();
+      setOrders(data.orders);
+      setPagination(data.pagination);
+    } else {
+      console.error('Failed to fetch orders');
     }
-  };
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+  } finally {
+    setLoading(false);
+  }
+}, [filters]);
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {

@@ -48,6 +48,19 @@ const nextConfig = {
       'your-cloudinary-domain.cloudinary.com', // Replace with your Cloudinary domain
       'localhost',
       'res.cloudinary.com',
+      "via.placeholder.com",
+      "your-image-domain.com",
+       "www.shutterstock.com",
+       "i.ibb.co",
+       "i.pinimg.com",
+       "hindi.holidayrider.com",
+       "static.independent.co.uk",
+       "t3.ftcdn.net",
+       "t3.ftcdn.net",
+       "images.pexels.com",
+       "rukminim2.flixcart.com",
+       "rukminim2.flixcart.com",
+         
     ],
   },
 }

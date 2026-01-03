@@ -1,7 +1,7 @@
 // src/context/CartContext.js
 "use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 
 const CartContext = createContext();
@@ -10,7 +10,7 @@ export function CartProvider({ children }) {
   const [cartCount, setCartCount] = useState(0);
   const { isSignedIn } = useUser();
 
-  const fetchCartCount = async () => {
+   const fetchCartCount = useCallback(async () => {
     if (!isSignedIn) {
       setCartCount(0);
       return;
@@ -25,11 +25,11 @@ export function CartProvider({ children }) {
     } catch (error) {
       console.error('Failed to fetch cart count', error);
     }
-  };
+  }, [isSignedIn]);
 
   useEffect(() => {
     fetchCartCount();
-  }, [isSignedIn]);
+  }, [fetchCartCount]); 
 
   const updateCartCount = (count) => {
     setCartCount(count);

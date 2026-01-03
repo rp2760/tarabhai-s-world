@@ -269,13 +269,16 @@ function ProductCard({ product, loading }) {
               }`}
             ></div>
 
-            <img
-              src={product.image}
-              alt={product.name}
-              className={`relative z-10 object-contain h-52 w-full transition-all duration-500 ${
-                isHovering ? "scale-105" : "scale-100"
-              }`}
-            />
+           <Image
+  src={product.image}
+  alt={product.name}
+  width={400}
+  height={208} // h-52 ≈ 208px
+  className={`relative z-10 object-contain w-full transition-all duration-500 ${
+    isHovering ? "scale-105" : "scale-100"
+  }`}
+/>
+
 
             <button
               onClick={(e) => {
