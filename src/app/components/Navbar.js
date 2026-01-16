@@ -1407,7 +1407,7 @@ export default function Navbar() {
             </form>
 
             {/* Mobile Navigation Links */}
-            <div className="pt-4 border-t border-gray-100 space-y-2">
+            <div className=" border-t border-gray-300 space-y-2">
               <MobileNavLink href="/" text="Home" onClick={closeMenu} />
               <MobileNavLink href="/about" text="About" onClick={closeMenu} />
               <MobileNavLink href="/services" text="Services" onClick={closeMenu} />
