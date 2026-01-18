@@ -217,8 +217,7 @@
 
 
 
-
-
+// src/models/Order.js
 import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
@@ -276,7 +275,12 @@ const orderSchema = new mongoose.Schema({
       required: true,
       enum: ['pending', 'completed', 'failed', 'refunded'],
       default: 'pending'
-    }
+    },
+    // New fields for Razorpay integration
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpaySignature: String,
+    transactionId: String, // For COD or other methods
   },
   status: {
     type: String,

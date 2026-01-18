@@ -407,7 +407,7 @@
 
 
 
-
+// src/app/api/orders/route.js
 import { NextResponse } from "next/server";
 import { connectDB } from "../../../lib/db";
 import { Order } from "../../../models/Order";
@@ -417,28 +417,24 @@ import { sendOrderConfirmationEmail } from "../../../lib/nodemailer";
 // Enhanced Order ID Generator with Daily Counter
 async function generateOrderId() {
   const date = new Date();
-  const year = date.getFullYear().toString(); // Last 2 digits of year
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month with leading zero
-  const day = String(date.getDate()).padStart(2, '0'); // Day with leading zero
+  const year = date.getFullYear().toString();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   
   const datePrefix = `${year}${month}${day}`;
   
-  // Get today's start and end time for filtering
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
   const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
   
-  // Count today's orders
   const todayOrderCount = await Order.countDocuments({
     createdAt: {
-      $gte: startOfDay, // gte means greaater than or eqauls to 
-      $lte: endOfDay  // less than or equls to 
+      $gte: startOfDay,
+      $lte: endOfDay
     }
   });
   
-  // Increment counter for new order
   const orderNumber = String(todayOrderCount + 1).padStart(6, '0');
   
-  // Format: ORD-YYMMDD-000001 (e.g., ORD-241028-000001)
   return `ORD-${datePrefix}-${orderNumber}`;
 }
 
@@ -454,7 +450,6 @@ export async function POST(req) {
       );
     }
 
-    // Get current user data from Clerk
     const user = await currentUser();
     const userEmail = user?.emailAddresses?.[0]?.emailAddress;
 
@@ -471,7 +466,7 @@ export async function POST(req) {
     console.log('User email from Clerk:', userEmail);
     console.log('Received order data:', orderData);
 
-    // Validate required fields with better error messages
+    // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { error: "Items are required and must be a non-empty array" },
@@ -500,13 +495,23 @@ export async function POST(req) {
       );
     }
 
-    // Normalize payment method to match enum values
+    // Normalize payment method
     const normalizedPaymentMethod = normalizePaymentMethod(payment.method);
 
-    // Generate unique order ID based on today's count
+    // Determine payment status based on method and Razorpay data
+    let paymentStatus = 'pending';
+    if (payment.razorpayPaymentId) {
+      // Online payment verified
+      paymentStatus = 'completed';
+    } else if (normalizedPaymentMethod === 'cod') {
+      // COD - payment pending until delivery
+      paymentStatus = 'pending';
+    }
+
+    // Generate unique order ID
     const orderId = await generateOrderId();
 
-    // Create order with normalized data
+    // Create order
     const order = new Order({
       orderId,
       userId,
@@ -517,7 +522,7 @@ export async function POST(req) {
       })),
       address: {
         name: address.fullName,
-        email: userEmail, // Use the email from Clerk
+        email: userEmail,
         phone: address.phoneNumber || '',
         street: address.streetAddress || '',
         city: address.city || '',
@@ -527,9 +532,12 @@ export async function POST(req) {
       },
       payment: {
         method: normalizedPaymentMethod,
-        status: 'pending'
+        status: paymentStatus,
+        razorpayOrderId: payment.razorpayOrderId || undefined,
+        razorpayPaymentId: payment.razorpayPaymentId || undefined,
+        razorpaySignature: payment.razorpaySignature || undefined,
       },
-      status: 'pending',
+      status: paymentStatus === 'completed' ? 'processing' : 'pending',
       subtotal: subtotal || 0,
       shipping: shipping || 0,
       tax: tax || 0,
@@ -547,14 +555,12 @@ export async function POST(req) {
       console.log('Order confirmation email sent successfully');
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
-      // Don't fail the request if email fails
     }
 
     return NextResponse.json(savedOrder, { status: 201 });
   } catch (error) {
     console.error("Error creating order:", error);
     
-    // More specific error handling
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return NextResponse.json(
