@@ -60,6 +60,7 @@ const nextConfig = {
        "images.pexels.com",
        "rukminim2.flixcart.com",
        "rukminim2.flixcart.com",
+       "example.com",
          
     ],
   },

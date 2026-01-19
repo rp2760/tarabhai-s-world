@@ -2755,8 +2755,6 @@
 
 
 
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -2764,6 +2762,8 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import ProductCard from "../../../app/components/ProductCard";
 import Navbar from "../../../app/components/Navbar";
+import ReviewForm from "../../../app/components/ReviewForm";
+import ReviewList from "../../../app/components/ReviewList";
 import { useComparison } from "../../../context/ComparisonContext";
 import {
   AlertDialog,
@@ -2784,8 +2784,8 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [showZoom, setShowZoom] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   
-  // Separate state for color and size selection
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   
@@ -2811,59 +2811,53 @@ export default function ProductDetails() {
     setAlertConfig({ ...alertConfig, open: false });
   };
 
-  useEffect(() => {
-    async function fetchProduct() {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/products/${id}`);
-        if (!res.ok) throw new Error("Product not found");
+  const fetchProductData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/products/${id}`);
+      if (!res.ok) throw new Error("Product not found");
+      
+      const data = await res.json();
+      setProduct(data);
+
+      if (data.variants && data.variants.length > 0) {
+        const firstVariant = data.variants[0];
+        setSelectedColor(firstVariant.color);
         
-        const data = await res.json();
-        console.log("Fetched product:", data); // Debug log
-        setProduct(data);
-
-        // Initialize with first variant and first option
-        if (data.variants && data.variants.length > 0) {
-          const firstVariant = data.variants[0];
-          setSelectedColor(firstVariant.color);
-          
-          if (firstVariant.options && firstVariant.options.length > 0) {
-            setSelectedSize(firstVariant.options[0].size);
-          }
+        if (firstVariant.options && firstVariant.options.length > 0) {
+          setSelectedSize(firstVariant.options[0].size);
         }
-
-        // Fetch related products
-        if (data.category) {
-          const relatedRes = await fetch(
-            `/api/products?category=${data.category}&limit=4&exclude=${id}`
-          );
-          const relatedData = await relatedRes.json();
-          setRelatedProducts(relatedData);
-        }
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
       }
-    }
 
-    if (id) fetchProduct();
+      if (data.category) {
+        const relatedRes = await fetch(
+          `/api/products?category=${data.category}&limit=4&exclude=${id}`
+        );
+        const relatedData = await relatedRes.json();
+        setRelatedProducts(relatedData);
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) fetchProductData();
   }, [id]);
 
-  // Get current variant based on selected color
   const getCurrentVariant = () => {
     if (!product || !selectedColor) return null;
     return product.variants?.find(v => v.color === selectedColor);
   };
 
-  // Get current option based on selected size
   const getCurrentOption = () => {
     const variant = getCurrentVariant();
     if (!variant || !selectedSize) return null;
     return variant.options?.find(opt => opt.size === selectedSize);
   };
 
-  // Get current product data with all overrides
   const getCurrentProduct = () => {
     if (!product) return null;
     
@@ -2888,30 +2882,25 @@ export default function ProductDetails() {
 
   const currentProduct = getCurrentProduct();
 
-  // Handle color selection
   const handleColorSelect = (color) => {
     setSelectedColor(color);
-    setSelectedImage(0); // Reset image
+    setSelectedImage(0);
     
-    // Auto-select first size option for this color
     const variant = product.variants?.find(v => v.color === color);
     if (variant && variant.options && variant.options.length > 0) {
       setSelectedSize(variant.options[0].size);
     }
   };
 
-  // Handle size selection
   const handleSizeSelect = (size) => {
     setSelectedSize(size);
   };
 
-  // Get available sizes for selected color
   const getAvailableSizes = () => {
     const variant = getCurrentVariant();
     return variant?.options || [];
   };
 
-  // Calculate discount
   const getDiscountPercentage = () => {
     if (!currentProduct) return 0;
     const { originalPrice, currentPrice } = currentProduct;
@@ -2994,6 +2983,16 @@ export default function ProductDetails() {
     setZoomPosition({ x, y });
   };
 
+  const handleReviewSuccess = () => {
+    setShowReviewForm(false);
+    showAlert(
+      "Review Submitted! ⭐",
+      "Thank you for your feedback! Your review has been posted.",
+      "success"
+    );
+    fetchProductData(); // Refresh product data to show new review
+  };
+
   if (loading) {
     return (
       <>
@@ -3030,7 +3029,6 @@ export default function ProductDetails() {
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 py-10">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Breadcrumb */}
           <nav className="mt-16 mb-8 text-sm">
             <ol className="flex items-center space-x-3 text-gray-500">
               <li><Link href="/" className="hover:text-indigo-600">Home</Link></li>
@@ -3043,7 +3041,6 @@ export default function ProductDetails() {
 
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden border border-gray-200">
             <div className="md:flex">
-              {/* LEFT COLUMN - Images */}
               <div className="md:w-1/2 p-6 flex">
                 <div className="flex flex-col items-center mr-4">
                   {currentProduct.images?.map((img, index) => (
@@ -3076,7 +3073,6 @@ export default function ProductDetails() {
                 </div>
               </div>
 
-              {/* RIGHT COLUMN - Info */}
               <div className="md:w-1/2 p-8 flex flex-col justify-between">
                 {product.tag && (
                   <span className="inline-block bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-sm font-bold px-4 py-1 rounded-full shadow-sm mb-4 w-fit">
@@ -3097,14 +3093,16 @@ export default function ProductDetails() {
 
                 <div className="flex items-center mb-6">
                   {[...Array(5)].map((_, i) => (
-                    <svg key={i} className={`w-6 h-6 ${i < Math.floor(product.averageRating || 4) ? "text-yellow-400" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20">
+                    <svg key={i} className={`w-6 h-6 ${i < Math.floor(product.averageRating || 0) ? "text-yellow-400" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
-                  <span className="ml-2 text-gray-600">({product.totalReviews || 0} reviews)</span>
+                  <span className="ml-2 text-gray-600">
+                    {product.averageRating > 0 ? `${product.averageRating.toFixed(1)} ` : ''}
+                    ({product.totalReviews || 0} reviews)
+                  </span>
                 </div>
 
-                {/* Color Selection */}
                 {product.variants && product.variants.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
@@ -3128,7 +3126,6 @@ export default function ProductDetails() {
                   </div>
                 )}
 
-                {/* Size/Storage Selection */}
                 {availableSizes.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
@@ -3152,7 +3149,6 @@ export default function ProductDetails() {
                   </div>
                 )}
 
-                {/* Stock Status */}
                 <div className="mb-4">
                   <span className={`text-sm font-semibold ${
                     currentProduct.stock > 0 ? 'text-green-600' : 'text-red-600'
@@ -3164,7 +3160,6 @@ export default function ProductDetails() {
                   </span>
                 </div>
 
-                {/* Price */}
                 <div className="mb-6 p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl shadow-inner">
                   <div className="flex items-center gap-3">
                     {discountPercentage > 0 && (
@@ -3183,7 +3178,6 @@ export default function ProductDetails() {
                   </div>
                 </div>
 
-                {/* Shipping Info */}
                 <div className="mb-6 grid grid-cols-2 gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <span className="mr-2">🚚</span>
@@ -3195,7 +3189,6 @@ export default function ProductDetails() {
                   </div>
                 </div>
 
-                {/* Buttons */}
                 <div className="space-y-3 mb-8">
                   <button onClick={handleAddToCart} disabled={currentProduct.stock <= 0} className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 transition transform text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-lg ${currentProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     🛒 Add to Cart
@@ -3205,18 +3198,19 @@ export default function ProductDetails() {
                     {isInComparison ? "🔎 View Comparison" : "➕ Add to Comparison"}
                   </button>
 
-                  <button disabled={currentProduct.stock <= 0} className={`w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-105 transition transform text-white font-bold py-3 px-6 rounded-xl shadow-lg ${currentProduct.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    ⚡ Buy Now
+                  <button 
+                    onClick={() => setShowReviewForm(true)}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:scale-105 transition transform text-white font-bold py-3 px-6 rounded-xl shadow-lg"
+                  >
+                    ⭐ Write a Review
                   </button>
                 </div>
 
-                {/* Description */}
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Description</h3>
                   <p className="text-gray-700 leading-relaxed">{product.description}</p>
                 </div>
 
-                {/* Additional Info */}
                 <div className="grid grid-cols-2 gap-4 mt-4 text-sm text-gray-600">
                   {product.brand && <div><span className="font-semibold">Brand:</span> {product.brand}</div>}
                   {product.weight && <div><span className="font-semibold">Weight:</span> {product.weight}</div>}
@@ -3224,6 +3218,11 @@ export default function ProductDetails() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="mt-8">
+            <ReviewList productId={product._id} />
           </div>
 
           {/* Related Products */}
@@ -3239,6 +3238,15 @@ export default function ProductDetails() {
           )}
         </div>
       </div>
+
+      {/* Review Form Modal */}
+      {showReviewForm && (
+        <ReviewForm
+          product={currentProduct}
+          onClose={() => setShowReviewForm(false)}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
 
       {/* Alert Dialog */}
       <AlertDialog open={alertConfig.open} onOpenChange={closeAlert}>
@@ -3258,4 +3266,4 @@ export default function ProductDetails() {
       </AlertDialog>
     </>
   );
-} 
+}
