@@ -1,7 +1,6 @@
 "use client";
 
-// ✅ useCallback import add kiya
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -28,6 +27,13 @@ export default function ProductFilter({
   const [ratingFilter, setRatingFilter] = useState(0);
   const [sortBy, setSortBy] = useState("newest");
 
+  // Use ref to store the latest onFilterChange without causing re-renders
+  const onFilterChangeRef = useRef(onFilterChange);
+  
+  useEffect(() => {
+    onFilterChangeRef.current = onFilterChange;
+  }, [onFilterChange]);
+
   // Fetch filter metadata on mount
   useEffect(() => {
     async function fetchFilterData() {
@@ -53,7 +59,7 @@ export default function ProductFilter({
     fetchFilterData();
   }, [category]);
 
-  // ✅ Apply filters - useCallback se wrap kiya with all dependencies
+  // Apply filters - using ref to avoid dependency on onFilterChange
   const applyFilters = useCallback(() => {
     const filters = {
       brands: selectedBrands,
@@ -62,8 +68,8 @@ export default function ProductFilter({
       rating: ratingFilter,
       sortBy
     };
-    onFilterChange(filters);
-  }, [selectedBrands, priceFilter, ratingFilter, sortBy, onFilterChange]);
+    onFilterChangeRef.current(filters);
+  }, [selectedBrands, priceFilter, ratingFilter, sortBy]);
 
   // Reset all filters
   const resetFilters = () => {
@@ -72,7 +78,7 @@ export default function ProductFilter({
     setRatingFilter(0);
     setSortBy("newest");
     
-    onFilterChange({
+    onFilterChangeRef.current({
       brands: [],
       minPrice: priceRange.minPrice,
       maxPrice: priceRange.maxPrice,
@@ -90,13 +96,19 @@ export default function ProductFilter({
     );
   };
 
-  // ✅ Auto-apply on sort change - Fixed dependencies
-  useEffect(() => {
-    if (!loading) {
-      applyFilters();
-    }
-  }, [sortBy, applyFilters, loading]);
-
+  // Handle sort change - apply filters immediately
+  const handleSortChange = (value) => {
+    setSortBy(value);
+    // Apply filters with new sort value
+    const filters = {
+      brands: selectedBrands,
+      minPrice: priceFilter[0],
+      maxPrice: priceFilter[1],
+      rating: ratingFilter,
+      sortBy: value // Use the new value directly
+    };
+    onFilterChangeRef.current(filters);
+  };
 
   if (loading) {
     return (
@@ -125,7 +137,7 @@ export default function ProductFilter({
         <Label className="text-base font-semibold text-gray-900 mb-3 block">
           Sort By
         </Label>
-        <Select value={sortBy} onValueChange={setSortBy}>
+        <Select value={sortBy} onValueChange={handleSortChange}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select sort order" />
           </SelectTrigger>
@@ -155,11 +167,11 @@ export default function ProductFilter({
           />
           <div className="flex items-center justify-between text-sm">
             <span className="font-semibold text-gray-700">
-              ₹{priceFilter[0]}
+              ₹{priceFilter[0].toLocaleString()}
             </span>
             <span className="text-gray-500">to</span>
             <span className="font-semibold text-gray-700">
-              ₹{priceFilter[1]}
+              ₹{priceFilter[1].toLocaleString()}
             </span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductCard from "../components/ProductCard";
 import ProductFilter from "../components/ProductFilter";
@@ -29,7 +29,10 @@ function ShopContent() {
     sortBy: "newest"
   });
 
-  // Fetch products - Fixed dependencies
+  // Use ref to track if initial fetch has been done
+  const initialFetchDone = useRef(false);
+
+  // Fetch products - stable function that doesn't change
   const fetchProducts = useCallback(async (filters, page = 1) => {
     try {
       setLoading(true);
@@ -55,21 +58,44 @@ function ShopContent() {
       const data = await res.json();
 
       setProducts(data.products || []);
-      // Use functional update to avoid pagination dependency
-      setPagination(prev => data.pagination || prev);
+      setPagination(data.pagination || {
+        total: 0,
+        page: 1,
+        limit: 12,
+        totalPages: 1
+      });
     } catch (error) {
       console.error("Failed to fetch products:", error);
       setProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [category]); // Only category is needed now
+  }, [category]);
 
-  // Initial load - Fixed dependencies
+  // Initial load - only run once when category changes
   useEffect(() => {
-    fetchProducts(activeFilters, 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, fetchProducts]); // activeFilters intentionally omitted to prevent infinite loop
+    // Reset the initial fetch flag when category changes
+    initialFetchDone.current = false;
+    
+    // Reset filters when category changes
+    setActiveFilters({
+      brands: [],
+      minPrice: 0,
+      maxPrice: 100000,
+      rating: 0,
+      sortBy: "newest"
+    });
+    
+    fetchProducts({
+      brands: [],
+      minPrice: 0,
+      maxPrice: 100000,
+      rating: 0,
+      sortBy: "newest"
+    }, 1);
+    
+    initialFetchDone.current = true;
+  }, [category, fetchProducts]);
 
   // Handle filter change
   const handleFilterChange = (filters) => {
