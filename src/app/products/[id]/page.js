@@ -2753,11 +2753,9 @@
 
 
 
-
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import ProductCard from "../../../app/components/ProductCard";
@@ -2803,15 +2801,15 @@ export default function ProductDetails() {
   
   const isInComparison = comparisonProducts.some((p) => p._id === product?._id);
 
-  const showAlert = (title, description, variant = "default") => {
+  const showAlert = useCallback((title, description, variant = "default") => {
     setAlertConfig({ open: true, title, description, variant });
-  };
+  }, []);
 
-  const closeAlert = () => {
-    setAlertConfig({ ...alertConfig, open: false });
-  };
+  const closeAlert = useCallback(() => {
+    setAlertConfig(prev => ({ ...prev, open: false }));
+  }, []);
 
-  const fetchProductData = async () => {
+  const fetchProductData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/products/${id}`);
@@ -2841,11 +2839,11 @@ export default function ProductDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) fetchProductData();
-  }, [id]);
+  }, [id, fetchProductData]);
 
   const getCurrentVariant = () => {
     if (!product || !selectedColor) return null;

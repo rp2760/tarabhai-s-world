@@ -130,11 +130,10 @@
 
 
 
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,43 +162,37 @@ export default function SliderProductDashboard() {
     type: "info",
   });
 
-  const showFeedback = (title, description, type = "info") => {
-  setFeedbackConfig({ title, description, type });
-  setFeedbackDialogOpen(true);
-};
+  // Memoized feedback function
+  const showFeedback = useCallback((title, description, type = "info") => {
+    setFeedbackConfig({ title, description, type });
+    setFeedbackDialogOpen(true);
+  }, []);
 
-// ✅ FIX: showFeedback ko useCallback se wrap kiya
-const showFeedbackMemo = useCallback((title, description, type = "info") => {
-  setFeedbackConfig({ title, description, type });
-  setFeedbackDialogOpen(true);
-}, []);
+  // Memoized fetch function
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/slider-products');
+      const data = await res.json();
+      setProducts(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching slider products:', error);
+      showFeedback(
+        "Error Loading Products",
+        "Failed to fetch slider products. Please try again.",
+        "error"
+      );
+      setLoading(false);
+    }
+  }, [showFeedback]);
 
-
-useEffect(() => {
-  fetchProducts();
-}, [fetchProducts]);
-
-
-const fetchProducts = useCallback(async () => {
-  try {
-    const res = await fetch('/api/slider-products');
-    const data = await res.json();
-    setProducts(data);
-    setLoading(false);
-  } catch (error) {
-    console.error('Error fetching slider products:', error);
-    showFeedbackMemo(
-      "Error Loading Products",
-      "Failed to fetch slider products. Please try again.",
-      "error"
-    );
-    setLoading(false);
-  }
-}, [showFeedbackMemo]);
+  // Fetch on mount
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleDeleteClick = (product) => {
     setProductToDelete(product);
-    console.log(product);
     setDeleteDialogOpen(true);
   };
 
@@ -383,13 +376,13 @@ const fetchProducts = useCallback(async () => {
                       <tr key={product._id} className="hover:bg-purple-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="relative h-20 w-20 rounded-xl overflow-hidden shadow-md border-2 border-gray-200 cursor-pointer group" onClick={() => handlePreview(product)}>
-                           <Image
-  src={product.productImage || "https://via.placeholder.com/400?text=Product"}
-  alt={product.title}
-  fill
-  className="object-cover group-hover:scale-110 transition-transform"
-  sizes="(max-width: 768px) 100vw, 33vw"
-/>
+                            <Image
+                              src={product.productImage || "https://via.placeholder.com/400?text=Product"}
+                              alt={product.title}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform"
+                              sizes="80px"
+                            />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <Eye className="w-6 h-6 text-white" />
                             </div>
@@ -469,13 +462,13 @@ const fetchProducts = useCallback(async () => {
           {previewProduct && (
             <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-2xl">
               <Image
-  src={previewProduct.bgImage || "https://via.placeholder.com/800x600?text=Background"}
-  alt="Background"
-  fill
-  className="object-cover"
-  sizes="100vw"
-  unoptimized
-/>
+                src={previewProduct.bgImage || "https://via.placeholder.com/800x600?text=Background"}
+                alt="Background"
+                fill
+                className="object-cover"
+                sizes="100vw"
+                unoptimized
+              />
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
               <div className="absolute inset-0 flex items-center">
                 <div className="w-1/2 px-8 z-20">
@@ -500,14 +493,14 @@ const fetchProducts = useCallback(async () => {
                   )}
                 </div>
                 <div className="absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center">
-                 <Image
-  src={previewProduct.productImage || "https://via.placeholder.com/400?text=Product"}
-  alt="Product"
-  width={400}
-  height={400}
-  className="max-w-full max-h-full object-contain drop-shadow-2xl"
-  unoptimized
-/>
+                  <Image
+                    src={previewProduct.productImage || "https://via.placeholder.com/400?text=Product"}
+                    alt="Product"
+                    width={400}
+                    height={400}
+                    className="max-w-full max-h-full object-contain drop-shadow-2xl"
+                    unoptimized
+                  />
                 </div>
               </div>
             </div>
