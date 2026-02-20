@@ -113,8 +113,9 @@ function PageLoader() {
 export default function HomePage() {
   return (
     <Suspense fallback={<PageLoader />}>
-      <div className='min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,140,0,0.9),_rgba(255,200,150,0.6),_rgba(155,240,230,0.4),_rgba(200,220,255,0.5),_rgba(0,70,160,0.9))]'> 
+      <div className='min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,140,0,100),_rgba(255,200,150,0.6),_rgba(155,240,230,0.4),_rgba(200,220,255,0.5),_rgba(0,70,160,0.9))]'> 
         <Navbar />
+        
         <ProductSlider />
         {/* <ProductsWithCategoryNav defaultTitle="Featured Products" /> */}
         <CategoryNav /> 
