@@ -25,7 +25,7 @@ export const metadata = {
   },
   description: "Dealport is a modern e-commerce platform offering the best deals on electronics, fashion, and more.",
   keywords: [
-    "tarabhai nu e-cart",
+    "tarabhai nu e-cart ",
     "ecommerce",
     "online shopping",
     "dealport store",
